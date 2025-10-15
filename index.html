@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sayagyi's Cauldron</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  🎃 Sayagyi's Cauldron 🔮
+  <div style="text-align:center; margin-top:10px;">
+    <button id="adminBtn" title="Admin">Admin</button>
+  </div>
+</header>
+
+<div class="ghost" style="top:10%;left:12%">🧛‍♀️</div>
+<div class="ghost" style="top:60%;left:70%;animation-delay:2s">🐺</div>
+<div class="ghost" style="top:30%;left:50%;animation-delay:4s">🧛</div>
+
+<div class="game-container">
+  <div class="team" id="team1">
+    <h2>Vampires</h2>
+    <div class="score" id="score1">0</div>
+  </div>
+
+  <div class="combiner" id="combinerBox">
+    <h3>Brew your potions here!</h3>
+    <label for="teamSelect">Choose your team:</label><br>
+    <select id="teamSelect">
+      <option value="1">Vampires</option>
+      <option value="2">Werewolves</option>
+    </select><br><br>
+    <input type="text" id="item1" placeholder="Item 1" />
+    +
+    <input type="text" id="item2" placeholder="Item 2" />
+    <br>
+    <button onclick="combineItems()">Brew</button>
+    <div id="result">Result will appear here...</div>
+    <div id="usedList">Used combinations: None</div>
+  </div>
+
+  <div class="team" id="team2">
+    <h2>Werewolves</h2>
+    <div class="score" id="score2">0</div>
+  </div>
+</div>
+
+<footer>
+  <div class="logo-container">
+    <img src="logo-small.png" alt="My Logo">
+  </div> <br>
+  Copyright © 2025 Pen Noble English Language Academy. All rights reserved.
+</footer>
+
+<audio id="successSound" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_3518b8d252.mp3?filename=magic-spell-6006.mp3"></audio>
+<audio id="errorSound" src="https://cdn.pixabay.com/download/audio/2021/08/09/audio_3a62d5e3ee.mp3?filename=error-126627.mp3"></audio>
+
+<div id="adminPanel" aria-hidden="true">
+<h4>Admin Controls</h4>
+<div class="admin-row">
+  <label style="flex:1">Team 1</label>
+  <div style="display:flex;gap:6px">
+    <button class="small-btn" onclick="adjustScore(1,-1)">−</button>
+    <button class="small-btn" onclick="adjustScore(1,1)">+</button>
+  </div>
+</div>
+<div class="admin-row">
+  <label style="flex:1">Team 2</label>
+  <div style="display:flex;gap:6px">
+    <button class="small-btn" onclick="adjustScore(2,-1)">−</button>
+    <button class="small-btn" onclick="adjustScore(2,1)">+</button>
+  </div>
+</div>
+<hr style="border:0;border-top:1px solid rgba(255,255,255,.06);margin:8px 0">
+<div style="display:flex;gap:8px;align-items:center;">
+  <input id="setScore1" type="number" placeholder="Team1 #" style="width:80px" />
+  <input id="setScore2" type="number" placeholder="Team2 #" style="width:80px" />
+</div>
+<div style="display:flex;gap:8px;margin-top:8px">
+  <button class="small-btn" style="flex:1" onclick="setScoresFromInputs()">Set Scores</button>
+  <button class="small-btn" style="flex:1" onclick="resetScores()">Reset</button>
+  <button class="small-btn" style="flex:1" onclick="resetUsedCombinations()">Reset Combos</button>
+</div>
+<div class="warning">Admin password required to open this panel.<br>Change password in code (ADMIN_PASS).</div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
