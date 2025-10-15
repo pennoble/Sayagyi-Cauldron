@@ -1,12 +1,33 @@
-const ADMIN_PASS = 'HelloworlD@123'; // my password
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 
-// Load scores from localStorage 
-let score1 = parseInt(localStorage.getItem('score1')) || 0;
-let score2 = parseInt(localStorage.getItem('score2')) || 0;
-document.getElementById('score1').innerText = score1;
-document.getElementById('score2').innerText = score2;
+// ---------- FIREBASE CONFIG ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyCZepWAUL3t-wWe7mufLC6_OdlrnudOfyQ",
+  authDomain: "halloween-game-ece0d.firebaseapp.com",
+  databaseURL: "https://halloween-game-ece0d-default-rtdb.firebaseio.com/",
+  projectId: "halloween-game-ece0d",
+  storageBucket: "halloween-game-ece0d.appspot.com",
+  messagingSenderId: "407260830945",
+  appId: "1:407260830945:web:8b80b56080a4a9ac0a2ba0",
+  measurementId: "G-RFZ4BB17NF"
+};
 
-// Item combinations not very sure
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
+
+// ---------- ADMIN PASSWORD ----------
+const ADMIN_PASS = 'HelloworlD@123';
+
+// ---------- SCORES ----------
+let score1 = 0;
+let score2 = 0;
+
+// ---------- USED COMBINATIONS ----------
+let usedCombinations = [];
+
+// ---------- COMBINATIONS ----------
 const combinations = {
   "6+6":"6 🎃",
   "pumpkin+ghost":"Ma Phae Wah Pie 🥧",
@@ -15,15 +36,56 @@ const combinations = {
   "vampire+blood":"Nay Htoo Naing Strength 🩸"
 };
 
-// Used combinations
-let usedCombinations = JSON.parse(localStorage.getItem('usedCombinations')) || [];
+// ---------- HTML ELEMENTS ----------
+const score1El = document.getElementById('score1');
+const score2El = document.getElementById('score2');
+const usedListEl = document.getElementById('usedList');
+const resultBox = document.getElementById('result');
+const combiner = document.getElementById('combinerBox');
 
+// ---------- HELPER FUNCTIONS ----------
 function updateUsedList(){
-  const listDiv = document.getElementById('usedList');
-  listDiv.innerText = usedCombinations.length === 0 ? "Used combinations: None" : "Used combinations: " + usedCombinations.join(", ");
+  usedListEl.innerText = usedCombinations.length === 0 ? "Used combinations: None" : "Used combinations: " + usedCombinations.join(", ");
 }
-updateUsedList();
 
+function updateScoresUI(){
+  score1El.innerText = score1;
+  score2El.innerText = score2;
+}
+
+function saveToFirebase(){
+  set(ref(database, 'gameData'), {
+    score1: score1,
+    score2: score2,
+    usedCombinations: usedCombinations
+  });
+}
+
+// ---------- LOAD FROM FIREBASE ----------
+get(ref(database, 'gameData')).then(snapshot=>{
+  if(snapshot.exists()){
+    const data = snapshot.val();
+    score1 = data.score1 || 0;
+    score2 = data.score2 || 0;
+    usedCombinations = data.usedCombinations || [];
+    updateScoresUI();
+    updateUsedList();
+  }
+});
+
+// Real-time updates
+onValue(ref(database, 'gameData'), snapshot=>{
+  if(snapshot.exists()){
+    const data = snapshot.val();
+    score1 = data.score1 || 0;
+    score2 = data.score2 || 0;
+    usedCombinations = data.usedCombinations || [];
+    updateScoresUI();
+    updateUsedList();
+  }
+});
+
+// ---------- COMBINE ITEMS ----------
 function combineItems(){
   const teamSelect = document.getElementById('teamSelect').value;
   let i1 = document.getElementById('item1').value.trim().toLowerCase();
@@ -39,8 +101,6 @@ function combineItems(){
   }
 
   const result = combinations[`${i1}+${i2}`] || combinations[`${i2}+${i1}`];
-  const resultBox = document.getElementById('result');
-  const combiner = document.getElementById('combinerBox');
   const sfxOk = document.getElementById('successSound');
   const sfxErr = document.getElementById('errorSound');
 
@@ -49,19 +109,20 @@ function combineItems(){
     sfxOk.currentTime = 0; sfxOk.play();
 
     usedCombinations.push(key);
-    localStorage.setItem('usedCombinations', JSON.stringify(usedCombinations));
-    updateUsedList();
 
+    // Update score
     if(teamSelect === '1'){ 
       score1++; 
-      localStorage.setItem('score1',score1); 
-      document.getElementById('score1').innerText = score1; 
     }
     else { 
       score2++; 
-      localStorage.setItem('score2',score2); 
-      document.getElementById('score2').innerText = score2; 
     }
+
+    // Update Firebase and UI
+    saveToFirebase();
+    updateScoresUI();
+    updateUsedList();
+
   } else {
     resultBox.innerText = `${i1} + ${i2} = ❌ Invalid combo!`;
     sfxErr.currentTime = 0; sfxErr.play();
@@ -72,7 +133,7 @@ function combineItems(){
   combiner.classList.add('pulse');
 }
 
-// Admin panel
+// ---------- ADMIN PANEL ----------
 const adminBtn = document.getElementById('adminBtn');
 const adminPanel = document.getElementById('adminPanel');
 adminBtn.addEventListener('click', () => {
@@ -86,53 +147,45 @@ adminBtn.addEventListener('click', () => {
 
 function adjustScore(team, delta){
   if(team===1){ 
-    score1 = score1 + delta;  // removed Math.max(0,...)
-    localStorage.setItem('score1',score1); 
-    document.getElementById('score1').innerText=score1; 
+    score1 += delta;
+  } else { 
+    score2 += delta;
   }
-  else { 
-    score2 = score2 + delta;  // removed Math.max(0,...)
-    localStorage.setItem('score2',score2); 
-    document.getElementById('score2').innerText=score2; 
-  }
+  saveToFirebase();
 }
 
 function setScoresFromInputs(){
   const s1=parseInt(document.getElementById('setScore1').value);
   const s2=parseInt(document.getElementById('setScore2').value);
-  if(Number.isInteger(s1)){ 
-    score1 = s1;  // removed Math.max(0,...)
-    localStorage.setItem('score1',score1); 
-    document.getElementById('score1').innerText=score1; 
-  }
-  if(Number.isInteger(s2)){ 
-    score2 = s2;  // removed Math.max(0,...)
-    localStorage.setItem('score2',score2); 
-    document.getElementById('score2').innerText=score2; 
-  }
+  if(Number.isInteger(s1)){ score1 = s1; }
+  if(Number.isInteger(s2)){ score2 = s2; }
+  saveToFirebase();
   alert('Scores updated.');
 }
 
 function resetScores(){
   if(!confirm('Reset BOTH team scores to 0?')) return;
   score1=0; score2=0;
-  localStorage.setItem('score1',score1);
-  localStorage.setItem('score2',score2);
-  document.getElementById('score1').innerText=0;
-  document.getElementById('score2').innerText=0;
+  saveToFirebase();
 }
 
 function resetUsedCombinations(){
   usedCombinations = [];
-  localStorage.removeItem('usedCombinations');
-  updateUsedList();
+  saveToFirebase();
   alert('Used combinations reset!');
 }
 
-// Close admin panel with Escape
+// ---------- CLOSE ADMIN PANEL ----------
 document.addEventListener('keydown', (e)=>{
   if(e.key==='Escape'){ 
     adminPanel.style.display='none'; 
     adminPanel.setAttribute('aria-hidden','true'); 
   }
 });
+
+// ---------- EXPORT FUNCTION FOR HTML ----------
+window.combineItems = combineItems;
+window.adjustScore = adjustScore;
+window.setScoresFromInputs = setScoresFromInputs;
+window.resetScores = resetScores;
+window.resetUsedCombinations = resetUsedCombinations;
