@@ -1,4 +1,4 @@
-const ADMIN_PASS = 'admin123'; // my password
+const ADMIN_PASS = 'HelloworlD@123'; // my password
 
 // Load scores from localStorage 
 let score1 = parseInt(localStorage.getItem('score1')) || 0;
@@ -86,12 +86,12 @@ adminBtn.addEventListener('click', () => {
 
 function adjustScore(team, delta){
   if(team===1){ 
-    score1=Math.max(0,score1+delta); 
+    score1 = score1 + delta;  // removed Math.max(0,...)
     localStorage.setItem('score1',score1); 
     document.getElementById('score1').innerText=score1; 
   }
   else { 
-    score2=Math.max(0,score2+delta); 
+    score2 = score2 + delta;  // removed Math.max(0,...)
     localStorage.setItem('score2',score2); 
     document.getElementById('score2').innerText=score2; 
   }
@@ -100,8 +100,16 @@ function adjustScore(team, delta){
 function setScoresFromInputs(){
   const s1=parseInt(document.getElementById('setScore1').value);
   const s2=parseInt(document.getElementById('setScore2').value);
-  if(Number.isInteger(s1)){ score1=Math.max(0,s1); localStorage.setItem('score1',score1); document.getElementById('score1').innerText=score1; }
-  if(Number.isInteger(s2)){ score2=Math.max(0,s2); localStorage.setItem('score2',score2); document.getElementById('score2').innerText=score2; }
+  if(Number.isInteger(s1)){ 
+    score1 = s1;  // removed Math.max(0,...)
+    localStorage.setItem('score1',score1); 
+    document.getElementById('score1').innerText=score1; 
+  }
+  if(Number.isInteger(s2)){ 
+    score2 = s2;  // removed Math.max(0,...)
+    localStorage.setItem('score2',score2); 
+    document.getElementById('score2').innerText=score2; 
+  }
   alert('Scores updated.');
 }
 
