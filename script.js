@@ -53,11 +53,16 @@ function updateScoresUI(){
   score2El.innerText = score2;
 }
 
-function saveToFirebase(){
+function saveToFirebase() {
   set(ref(database, 'gameData'), {
-    score1: score1,
-    score2: score2,
-    usedCombinations: usedCombinations
+    score1,
+    score2,
+    usedCombinations
+  })
+  .then(() => console.log("✅ Saved to Firebase"))
+  .catch((error) => {
+    console.error("❌ Firebase write failed:", error);
+    alert("Error saving to Firebase: " + error.message);
   });
 }
 
