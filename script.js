@@ -13,58 +13,61 @@ const firebaseConfig = {
   measurementId: "G-RFZ4BB17NF"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// ---------- ADMIN PASSWORD ----------
-const ADMIN_PASS = 'HelloworlD@123';
-
-// ---------- SCORES ----------
+// ---------- VARIABLES ----------
+let ADMIN_PASS = "";
+let combinations = {};
 let score1 = 0;
 let score2 = 0;
-
-// ---------- USED COMBINATIONS ----------
 let usedCombinations = [];
 
-// ---------- COMBINATIONS ----------
-const combinations = {
-  "6+6":"6 🎃",
-  "pumpkin+ghost":"Ma Phae Wah Pie 🥧",
-  "bat+witch":"Hulk Potion 🧪",
-  "candy+skull":"Sweet Cruse 🍬💀",
-  "snake+blood":"Spirit Breath 🦠",
-  "pumpkin+lantern":"Spooky Glow 🎃🕯️",
-  "ghost+sheet":"Boo Drift 👻🌀",
-  "bat+moon":"Night Flutter 🦇🌕",
-  "witch+hat":"Hex Charm 🧙‍♀️🎩",
-  "spider+web":"Creepy Weave 🕷️🕸️",
-  "zombie+hand":"Grave Rise 🧟‍♂️🖐️",
-  "cat+shadow":"Midnight Prowl 🐈‍⬛🌑",
-  "vampire+fang":"Blood Bite 🧛‍♂️🩸",
-  "owl+tree":"Haunt Watch 🦉🌲",
-  "candle+drip":"Wax Whisper 🕯️💧",
-  "mummy+wrap":"Ancient Shroud 🤕🏺",
-  "skull+rose":"Death Bloom 💀🌹",
-  "crow+branch":"Dark Perch 🪶🌙",
-  "potion+bottle":"Witch Brew 🧪💚",
-  "cauldron+bubble":"Brew Storm ⚗️🌫️",
-  "eye+jar":"Cursed Gaze 👁️🫙",
-  "rat+cheese":"Grave Snack 🐀🧀",
-  "bone+dog":"Crypt Fetch 🦴🐕",
-  "broom+flight":"Sky Hex 🧹🌌",
-  "tomb+fog":"Silent Rest ⚰️🌫️",
-  "vampire+blood":"Nay Htoo Naing Strength 🩸"
-};
-
-// ---------- HTML ELEMENTS ----------
+// ---------- ELEMENTS ----------
 const score1El = document.getElementById('score1');
 const score2El = document.getElementById('score2');
 const usedListEl = document.getElementById('usedList');
 const resultBox = document.getElementById('result');
 const combiner = document.getElementById('combinerBox');
 
-// ---------- HELPER FUNCTIONS ----------
+// ---------- INITIAL LOAD ----------
+Promise.all([
+  get(ref(database, 'secureData')),
+  get(ref(database, 'gameData'))
+]).then(([secureSnap, gameSnap]) => {
+  if (secureSnap.exists()) {
+    const data = secureSnap.val();
+    ADMIN_PASS = data.adminPassword;
+    combinations = data.combinations || {};
+    console.log("✅ Secure data loaded from Firebase");
+  } else {
+    console.warn("⚠️ No secure data found in Firebase");
+  }
+
+  if (gameSnap.exists()) {
+    const g = gameSnap.val();
+    score1 = g.score1 || 0;
+    score2 = g.score2 || 0;
+    usedCombinations = g.usedCombinations || [];
+  }
+
+  updateScoresUI();
+  updateUsedList();
+});
+
+// Real-time updates for scores
+onValue(ref(database, 'gameData'), snap => {
+  if (snap.exists()) {
+    const g = snap.val();
+    score1 = g.score1 || 0;
+    score2 = g.score2 || 0;
+    usedCombinations = g.usedCombinations || [];
+    updateScoresUI();
+    updateUsedList();
+  }
+});
+
+// ---------- FUNCTIONS ----------
 function updateUsedList(){
   usedListEl.innerText = usedCombinations.length === 0 ? "Used combinations: None" : "Used combinations: " + usedCombinations.join(", ");
 }
@@ -74,88 +77,42 @@ function updateScoresUI(){
   score2El.innerText = score2;
 }
 
-function saveToFirebase() {
+function saveToFirebase(){
   set(ref(database, 'gameData'), {
     score1,
     score2,
     usedCombinations
-  })
-  .then(() => console.log("✅ Saved to Firebase"))
-  .catch((error) => {
-    console.error("❌ Firebase write failed:", error);
-    alert("Error saving to Firebase: " + error.message);
   });
 }
 
-// ---------- LOAD FROM FIREBASE ----------
-get(ref(database, 'gameData')).then(snapshot=>{
-  if(snapshot.exists()){
-    const data = snapshot.val();
-    score1 = data.score1 || 0;
-    score2 = data.score2 || 0;
-    usedCombinations = data.usedCombinations || [];
-    updateScoresUI();
-    updateUsedList();
-  }
-});
-
-// Real-time updates
-onValue(ref(database, 'gameData'), snapshot=>{
-  if(snapshot.exists()){
-    const data = snapshot.val();
-    score1 = data.score1 || 0;
-    score2 = data.score2 || 0;
-    usedCombinations = data.usedCombinations || [];
-    updateScoresUI();
-    updateUsedList();
-  }
-});
-
-// ---------- COMBINE ITEMS ----------
+// ---------- COMBINE ----------
 function combineItems(){
   const teamSelect = document.getElementById('teamSelect').value;
   let i1 = document.getElementById('item1').value.trim().toLowerCase();
   let i2 = document.getElementById('item2').value.trim().toLowerCase();
-
   if(!i1 || !i2){ alert("Enter both items."); return; }
 
   let key = [i1,i2].sort().join("+");
+  if(usedCombinations.includes(key)){ alert('This combination has already been used!'); return; }
 
-  if(usedCombinations.includes(key)){
-    alert('This combination has already been used!');
-    return;
-  }
-
-  const result = combinations[`${i1}+${i2}`] || combinations[`${i2}+${i1}`];
+  const result = combinations[key] || combinations[`${i2}+${i1}`];
   const sfxOk = document.getElementById('successSound');
   const sfxErr = document.getElementById('errorSound');
 
   if(result){
     resultBox.innerText = `${i1} + ${i2} = ${result}`;
     sfxOk.currentTime = 0; sfxOk.play();
-
     usedCombinations.push(key);
-
-    // Update score
-    if(teamSelect === '1'){ 
-      score1++; 
-    }
-    else { 
-      score2++; 
-    }
-
-    // Update Firebase and UI
+    if(teamSelect === '1') score1++; else score2++;
     saveToFirebase();
-    updateScoresUI();
-    updateUsedList();
-
+    updateScoresUI(); updateUsedList();
   } else {
     resultBox.innerText = `${i1} + ${i2} = ❌ Invalid combo!`;
     sfxErr.currentTime = 0; sfxErr.play();
   }
 
-  combiner.classList.remove('pulse'); 
-  void combiner.offsetWidth; 
+  combiner.classList.remove('pulse');
+  void combiner.offsetWidth;
   combiner.classList.add('pulse');
 }
 
@@ -164,52 +121,45 @@ const adminBtn = document.getElementById('adminBtn');
 const adminPanel = document.getElementById('adminPanel');
 adminBtn.addEventListener('click', () => {
   const p = prompt('Enter admin password:');
-  if(p===null) return;
-  if(p===ADMIN_PASS){ 
-    adminPanel.style.display='block'; 
-    adminPanel.setAttribute('aria-hidden','false'); 
+  if (p === null) return;
+  if (p === ADMIN_PASS){
+    adminPanel.style.display='block';
+    adminPanel.setAttribute('aria-hidden','false');
   } else alert('Wrong password.');
 });
 
 function adjustScore(team, delta){
-  if(team===1){ 
-    score1 += delta;
-  } else { 
-    score2 += delta;
-  }
+  if(team===1){ score1+=delta; } else { score2+=delta; }
   saveToFirebase();
 }
-
 function setScoresFromInputs(){
   const s1=parseInt(document.getElementById('setScore1').value);
   const s2=parseInt(document.getElementById('setScore2').value);
-  if(Number.isInteger(s1)){ score1 = s1; }
-  if(Number.isInteger(s2)){ score2 = s2; }
+  if(Number.isInteger(s1)) score1=s1;
+  if(Number.isInteger(s2)) score2=s2;
   saveToFirebase();
   alert('Scores updated.');
 }
-
 function resetScores(){
   if(!confirm('Reset BOTH team scores to 0?')) return;
   score1=0; score2=0;
   saveToFirebase();
 }
-
 function resetUsedCombinations(){
-  usedCombinations = [];
+  usedCombinations=[];
   saveToFirebase();
   alert('Used combinations reset!');
 }
 
-// ---------- CLOSE ADMIN PANEL ----------
-document.addEventListener('keydown', (e)=>{
-  if(e.key==='Escape'){ 
-    adminPanel.style.display='none'; 
-    adminPanel.setAttribute('aria-hidden','true'); 
+// Close admin panel
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){
+    adminPanel.style.display='none';
+    adminPanel.setAttribute('aria-hidden','true');
   }
 });
 
-// ---------- EXPORT FUNCTION FOR HTML ----------
+// ---------- EXPORT ----------
 window.combineItems = combineItems;
 window.adjustScore = adjustScore;
 window.setScoresFromInputs = setScoresFromInputs;
