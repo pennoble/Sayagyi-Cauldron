@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 
-// ---------- FIREBASE CONFIG ----------
+// ---------- FIREBASE CONFIG STARTS HERE ok later use ----------
 const firebaseConfig = {
   apiKey: "AIzaSyCZepWAUL3t-wWe7mufLC6_OdlrnudOfyQ",
   authDomain: "halloween-game-ece0d.firebaseapp.com",
@@ -85,7 +85,7 @@ function saveToFirebase(){
   });
 }
 
-// ---------- COMBINE ----------
+// ---------- my students will combine items here ----------
 function combineItems(){
   const teamSelect = document.getElementById('teamSelect').value;
   let i1 = document.getElementById('item1').value.trim().toLowerCase();
