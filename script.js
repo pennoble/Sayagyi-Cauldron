@@ -19,6 +19,8 @@ const database = getDatabase(app);
 // ---------- VARIABLES ----------
 let ADMIN_PASS = "";
 let combinations = {};
+let rankPasswords = {};
+
 let score1 = 0;
 let score2 = 0;
 let usedCombinations = [];
@@ -29,6 +31,7 @@ const score2El = document.getElementById('score2');
 const usedListEl = document.getElementById('usedList');
 const resultBox = document.getElementById('result');
 const combiner = document.getElementById('combinerBox');
+const rankSelect = document.getElementById('rankSelect');
 
 // ---------- INITIAL LOAD ----------
 Promise.all([
@@ -39,9 +42,7 @@ Promise.all([
     const data = secureSnap.val();
     ADMIN_PASS = data.adminPassword;
     combinations = data.combinations || {};
-    console.log("✅ Secure data loaded from Firebase");
-  } else {
-    console.warn("⚠️ No secure data found in Firebase");
+    rankPasswords = data.rankPasswords || {}; // passwords for Bronze/Silver/Gold
   }
 
   if (gameSnap.exists()) {
@@ -55,7 +56,7 @@ Promise.all([
   updateUsedList();
 });
 
-// Real-time updates for scores
+// Real-time updates
 onValue(ref(database, 'gameData'), snap => {
   if (snap.exists()) {
     const g = snap.val();
@@ -87,9 +88,11 @@ function saveToFirebase(){
   });
 }
 
-// ---------- MAIN COMBINATION LOGIC ----------
+// ---------- COMBINE ITEMS ----------
 function combineItems(){
   const teamSelect = document.getElementById('teamSelect').value;
+  const rank = rankSelect.value;
+
   let i1 = document.getElementById('item1').value.trim().toLowerCase();
   let i2 = document.getElementById('item2').value.trim().toLowerCase();
   if(!i1 || !i2){ alert("Enter both items."); return; }
@@ -102,8 +105,24 @@ function combineItems(){
   const sfxErr = document.getElementById('errorSound');
 
   if(result){
-    // 🔸 RANDOM POINT SYSTEM (1–100)
-    const randomPoints = Math.floor(Math.random() * 100) + 1;
+    let randomPoints = 0;
+
+    if(rank === "bronze"){
+      const pass = prompt("Enter Bronze password:");
+      if(pass !== rankPasswords.bronze){ alert("Wrong password!"); return; }
+      randomPoints = Math.floor(Math.random() * 51) + 100; // 100-150
+    } else if(rank === "silver"){
+      const pass = prompt("Enter Silver password:");
+      if(pass !== rankPasswords.silver){ alert("Wrong password!"); return; }
+      randomPoints = Math.floor(Math.random() * 51) + 150; // 150-200
+    } else if(rank === "gold"){
+      const pass = prompt("Enter Gold password:");
+      if(pass !== rankPasswords.gold){ alert("Wrong password!"); return; }
+      randomPoints = Math.floor(Math.random() * 301) + 200; // 200-500
+    } else {
+      randomPoints = Math.floor(Math.random() * 100) + 1; // normal 1-100
+    }
+
     resultBox.innerText = `${i1} + ${i2} = ${result} 🎁 (+${randomPoints} points!)`;
     sfxOk.currentTime = 0; 
     sfxOk.play();
@@ -130,8 +149,8 @@ const adminBtn = document.getElementById('adminBtn');
 const adminPanel = document.getElementById('adminPanel');
 adminBtn.addEventListener('click', () => {
   const p = prompt('Enter admin password:');
-  if (p === null) return;
-  if (p === ADMIN_PASS){
+  if(p === null) return;
+  if(p === ADMIN_PASS){
     adminPanel.style.display='block';
     adminPanel.setAttribute('aria-hidden','false');
   } else alert('Wrong password.');
@@ -160,7 +179,7 @@ function resetUsedCombinations(){
   alert('Used combinations reset!');
 }
 
-// Close admin panel
+// Close admin panel with ESC
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape'){
     adminPanel.style.display='none';
