@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 
-// ---------- FIREBASE CONFIG STARTS HERE ok later use ----------
+// ---------- FIREBASE CONFIG ----------
 const firebaseConfig = {
   apiKey: "AIzaSyCZepWAUL3t-wWe7mufLC6_OdlrnudOfyQ",
   authDomain: "halloween-game-ece0d.firebaseapp.com",
@@ -69,7 +69,9 @@ onValue(ref(database, 'gameData'), snap => {
 
 // ---------- FUNCTIONS ----------
 function updateUsedList(){
-  usedListEl.innerText = usedCombinations.length === 0 ? "Used combinations: None" : "Used combinations: " + usedCombinations.join(", ");
+  usedListEl.innerText = usedCombinations.length === 0 ? 
+    "Used combinations: None" : 
+    "Used combinations: " + usedCombinations.join(", ");
 }
 
 function updateScoresUI(){
@@ -85,7 +87,7 @@ function saveToFirebase(){
   });
 }
 
-// ---------- my students will combine items here ----------
+// ---------- MAIN COMBINATION LOGIC ----------
 function combineItems(){
   const teamSelect = document.getElementById('teamSelect').value;
   let i1 = document.getElementById('item1').value.trim().toLowerCase();
@@ -100,15 +102,22 @@ function combineItems(){
   const sfxErr = document.getElementById('errorSound');
 
   if(result){
-    resultBox.innerText = `${i1} + ${i2} = ${result}`;
-    sfxOk.currentTime = 0; sfxOk.play();
+    // 🔸 RANDOM POINT SYSTEM (1–100)
+    const randomPoints = Math.floor(Math.random() * 100) + 1;
+    resultBox.innerText = `${i1} + ${i2} = ${result} 🎁 (+${randomPoints} points!)`;
+    sfxOk.currentTime = 0; 
+    sfxOk.play();
+
     usedCombinations.push(key);
-    if(teamSelect === '1') score1++; else score2++;
+    if(teamSelect === '1') score1 += randomPoints; else score2 += randomPoints;
+
     saveToFirebase();
-    updateScoresUI(); updateUsedList();
+    updateScoresUI(); 
+    updateUsedList();
   } else {
     resultBox.innerText = `${i1} + ${i2} = ❌ Invalid combo!`;
-    sfxErr.currentTime = 0; sfxErr.play();
+    sfxErr.currentTime = 0; 
+    sfxErr.play();
   }
 
   combiner.classList.remove('pulse');
