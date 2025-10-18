@@ -22,8 +22,10 @@ let combinations = {};
 let score1 = 0;
 let score2 = 0;
 let usedCombinations = [];
-let rankPasswords = {}; // rank passwords from Firebase
-let validatedRank = null; // keep track of validated rank for this session
+let validatedRank = null; // stores rank after validation
+
+// Passwords for ranks stored in Firebase
+let rankPasswords = {}; 
 
 // ---------- ELEMENTS ----------
 const score1El = document.getElementById('score1');
@@ -31,7 +33,7 @@ const score2El = document.getElementById('score2');
 const usedListEl = document.getElementById('usedList');
 const resultBox = document.getElementById('result');
 const combiner = document.getElementById('combinerBox');
-const rankSelect = document.getElementById('rankSelect'); // add this in HTML
+const rankSelect = document.getElementById('rankSelect');
 
 // ---------- INITIAL LOAD ----------
 Promise.all([
@@ -42,7 +44,7 @@ Promise.all([
     const data = secureSnap.val();
     ADMIN_PASS = data.adminPassword;
     combinations = data.combinations || {};
-    rankPasswords = data.rankPasswords || {};
+    rankPasswords = data.rankPasswords || {}; // fetch rank passwords from Firebase
     console.log("✅ Secure data loaded from Firebase");
   } else {
     console.warn("⚠️ No secure data found in Firebase");
@@ -91,25 +93,32 @@ function saveToFirebase(){
   });
 }
 
-// ---------- COMBINATION LOGIC WITH RANK ----------
+// ---------- RANK SELECTION ----------
+rankSelect.addEventListener('change', () => {
+  const selectedRank = rankSelect.value;
+  if(selectedRank === "Normal"){ 
+    validatedRank = null; // normal rank, no password needed
+    return;
+  }
+
+  const pw = prompt(`Enter password for ${selectedRank} rank:`);
+  if(!pw || pw !== rankPasswords[selectedRank]){
+    alert('Incorrect password. You remain normal rank.');
+    rankSelect.value = "Normal";
+    validatedRank = null;
+  } else {
+    validatedRank = selectedRank;
+    alert(`✅ ${validatedRank} rank activated!`);
+  }
+});
+
+// ---------- MAIN COMBINATION LOGIC ----------
 function combineItems(){
   const teamSelect = document.getElementById('teamSelect').value;
   let i1 = document.getElementById('item1').value.trim().toLowerCase();
   let i2 = document.getElementById('item2').value.trim().toLowerCase();
-  const rank = rankSelect.value;
 
   if(!i1 || !i2){ alert("Enter both items."); return; }
-
-  // ----- Rank password validation -----
-  if(rank && validatedRank !== rank){
-    const pw = prompt(`Enter password for ${rank} rank:`);
-    if(!pw || pw !== rankPasswords[rank]){
-      alert('Incorrect rank password. You remain normal rank.');
-    } else {
-      validatedRank = rank; // mark rank as validated for session
-      alert(`✅ ${rank} rank activated!`);
-    }
-  }
 
   let key = [i1,i2].sort().join("+");
   if(usedCombinations.includes(key)){ alert('This combination has already been used!'); return; }
@@ -120,32 +129,23 @@ function combineItems(){
 
   if(result){
     let points = 0;
-
-    // Assign points based on rank
-    if(validatedRank === 'Bronze'){
-      points = Math.floor(Math.random() * 51) + 100; // 100–150
-    } else if(validatedRank === 'Silver'){
-      points = Math.floor(Math.random() * 51) + 150; // 150–200
-    } else if(validatedRank === 'Gold'){
-      points = Math.floor(Math.random() * 301) + 200; // 200–500
-    } else {
-      points = Math.floor(Math.random() * 100) + 1; // normal
-    }
+    if(validatedRank === 'Bronze') points = Math.floor(Math.random()*51)+100;      // 100-150
+    else if(validatedRank === 'Silver') points = Math.floor(Math.random()*51)+150;  // 150-200
+    else if(validatedRank === 'Gold') points = Math.floor(Math.random()*301)+200;   // 200-500
+    else points = Math.floor(Math.random()*100)+1;                                   // Normal 1-100
 
     resultBox.innerText = `${i1} + ${i2} = ${result} 🎁 (+${points} points!)`;
     sfxOk.currentTime = 0; 
     sfxOk.play();
 
     usedCombinations.push(key);
-    if(teamSelect === '1') score1 += points; else score2 += points;
+    if(teamSelect==='1') score1+=points; else score2+=points;
 
     saveToFirebase();
-    updateScoresUI(); 
-    updateUsedList();
+    updateScoresUI(); updateUsedList();
   } else {
     resultBox.innerText = `${i1} + ${i2} = ❌ Invalid combo!`;
-    sfxErr.currentTime = 0; 
-    sfxErr.play();
+    sfxErr.currentTime = 0; sfxErr.play();
   }
 
   combiner.classList.remove('pulse');
