@@ -11,73 +11,116 @@ const firebaseConfig = {
   appId: "1:407260830945:web:8b80b56080a4a9ac0a2ba0",
   measurementId: "G-RFZ4BB17NF"
 };
+
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
+let ADMIN_PASS = "";
+let score1 = 0;
+let score2 = 0;
+let usedCombinations = [];
+
 const score1El = document.getElementById('score1');
 const score2El = document.getElementById('score2');
-const team1El = document.getElementById('team1');
-const team2El = document.getElementById('team2');
+const adminBtn = document.getElementById('adminBtn');
+const adminPanel = document.getElementById('adminPanel');
 
-document.getElementById('winnerName').innerText = "Team Werewolves";
+const winnerNameEl = document.getElementById('winnerName');
+if (winnerNameEl) {
+  winnerNameEl.innerText = "Team Werewolves";
+}
+
+Promise.all([
+  get(ref(database, 'secureData')),
+  get(ref(database, 'gameData'))
+]).then(([secureSnap, gameSnap]) => {
+  // Load admin password
+  if (secureSnap.exists()) {
+    const data = secureSnap.val();
+    ADMIN_PASS = data.adminPassword || "";
+  } else {
+    console.warn("⚠️ No secureData found in Firebase");
+  }
+
+  if (gameSnap.exists()) {
+    const g = gameSnap.val();
+    score1 = g.score1 || 0;
+    score2 = g.score2 || 0;
+    usedCombinations = g.usedCombinations || [];
+  } else {
+    console.warn("⚠️ No gameData found in Firebase");
+  }
+
+  updateScoresUI();
+}).catch(err => {
+  console.error("Error loading initial data:", err);
+});
 
 onValue(ref(database, 'gameData'), snap => {
   if (snap.exists()) {
     const g = snap.val();
-    score1El.innerText = g.score1 || 0;
-    score2El.innerText = g.score2 || 0;
+    score1 = g.score1 || 0;
+    score2 = g.score2 || 0;
+    usedCombinations = g.usedCombinations || [];
+    updateScoresUI();
   }
 });
 
-const adminPanel = document.getElementById('adminPanel');
-document.getElementById('adminBtn').addEventListener('click', () => {
-  const p = prompt("Admin password:");
-  get(ref(database, 'secureData')).then(snap=>{
-    if(snap.exists() && p === snap.val().adminPassword){
-      adminPanel.style.display = 'block';
-    } else alert("Wrong password.");
-  });
-});
+function updateScoresUI(){
+  score1El.innerText = score1;
+  score2El.innerText = score2;
+}
 
-window.adjustScore = function(team, delta){
-  const scoreRef = ref(database, 'gameData');
-  get(scoreRef).then(snap=>{
-    if(snap.exists()){
-      let g = snap.val();
-      if(team===1) g.score1 += delta;
-      else g.score2 += delta;
-      set(scoreRef, g);
-    }
+function saveToFirebase(){
+  set(ref(database, 'gameData'), {
+    score1,
+    score2,
+    usedCombinations
   });
 }
 
-window.setScoresFromInputs = function() {
-  const n1 = parseInt(document.getElementById("setScore1").value);
-  const n2 = parseInt(document.getElementById("setScore2").value);
-  set(ref(database, "gameData"), {
-    score1: n1,
-    score2: n2,
-    usedCombinations: []
-  });
-};
-
-window.resetScores = function() {
-  if(confirm("Reset scores to 0?"))
-    set(ref(database, "gameData"), {score1:0, score2:0, usedCombinations:[]});
-}
-
-window.resetUsedCombinations = function(){
-  get(ref(database,'gameData')).then(snap=>{
-    if(snap.exists()){
-      let g = snap.val();
-      g.usedCombinations = [];
-      set(ref(database,'gameData'), g);
-    }
-  });
-}
-
-document.addEventListener("keydown", e=>{
-  if(e.key === "Escape"){
-    adminPanel.style.display = "none";
+adminBtn.addEventListener('click', () => {
+  const p = prompt('Enter admin password:');
+  if (p === null) return;
+  if (p === ADMIN_PASS){
+    adminPanel.style.display='block';
+    adminPanel.setAttribute('aria-hidden','false');
+  } else {
+    alert('Wrong password.');
   }
 });
+
+function adjustScore(team, delta){
+  if(team===1){ score1+=delta; } else { score2+=delta; }
+  saveToFirebase();
+}
+function setScoresFromInputs(){
+  const s1=parseInt(document.getElementById('setScore1').value);
+  const s2=parseInt(document.getElementById('setScore2').value);
+  if(Number.isInteger(s1)) score1=s1;
+  if(Number.isInteger(s2)) score2=s2;
+  saveToFirebase();
+  alert('Scores updated.');
+}
+function resetScores(){
+  if(!confirm('Reset BOTH team scores to 0?')) return;
+  score1=0; score2=0;
+  saveToFirebase();
+}
+function resetUsedCombinations(){
+  usedCombinations=[];
+  saveToFirebase();
+  alert('Used combinations reset!');
+}
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){
+    adminPanel.style.display='none';
+    adminPanel.setAttribute('aria-hidden','true');
+  }
+});
+
+window.adjustScore = adjustScore;
+window.setScoresFromInputs = setScoresFromInputs;
+window.resetScores = resetScores;
+window.resetUsedCombinations = resetUsedCombinations;
