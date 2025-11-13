@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
 <header>
   🎃 Sayagyi's Cauldron 🔮
   <div style="text-align:center; margin-top:10px;">
@@ -14,51 +15,40 @@
   </div>
 </header>
 
+<div id="winnerBanner" class="winner-banner">
+  🏆 Congratulations, <span id="winnerName">Team Werewolves</span>! 🏆<br>
+  <span class="winner-subtitle">You have conquered Sayagyi's Cauldron this year!</span>
+</div>
+
 <div class="ghost" style="top:10%;left:12%">🧛‍♀️</div>
 <div class="ghost" style="top:60%;left:70%;animation-delay:2s">🐺</div>
 <div class="ghost" style="top:30%;left:50%;animation-delay:4s">🧛</div>
 
 <div class="game-container">
+
   <div class="team" id="team1">
     <h2>Vampires</h2>
     <div class="score" id="score1">0</div>
   </div>
 
   <div class="combiner" id="combinerBox">
-    <h3>Brew your potions here!</h3>
-    <label for="teamSelect">Choose your team:</label><br>
-    <select id="teamSelect">
-      <option value="1">Vampires</option>
-      <option value="2">Werewolves</option>
-    </select><br><br>
-
-    <label for="rankSelect">Select Subscription Rank:</label><br>
-    <select id="rankSelect">
-      <option value="Normal" selected>Normal</option>
-      <option value="Bronze">Bronze</option>
-      <option value="Silver">Silver</option>
-      <option value="Gold">Gold</option>
-    </select><br><br>
-
-    <input type="text" id="item1" placeholder="Item 1" />
-    +
-    <input type="text" id="item2" placeholder="Item 2" />
-    <br>
-    <button onclick="combineItems()">Brew</button>
-    <div id="result">Result will appear here...</div>
-    <div id="usedList">Used combinations: None</div>
+    <h3>🎃 Game Over 🎃</h3>
+    <p>The Werewolves have taken the Cauldron!</p>
+    <p>See you again next Halloween! 👻</p>
   </div>
 
-  <div class="team" id="team2">
+  <div class="team winner" id="team2">
     <h2>Werewolves</h2>
     <div class="score" id="score2">0</div>
   </div>
+
 </div> <br> <br>
 
 <footer>
   <div class="logo-container">
     <img src="logo-small.png" alt="My Logo">
-  </div> <br>
+  </div> 
+  <br>
   Copyright © 2025 Pen Noble English Language Academy. All rights reserved.
 </footer>
 
@@ -91,9 +81,10 @@
   <button class="small-btn" style="flex:1" onclick="resetScores()">Reset</button>
   <button class="small-btn" style="flex:1" onclick="resetUsedCombinations()">Reset Combos</button>
 </div>
-<div class="warning">Admin password required to open this panel.<br>Change password in code (ADMIN_PASS).</div>
+<div class="warning">Admin password required.</div>
 </div>
 
 <script type="module" src="script.js"></script>
+
 </body>
 </html>
